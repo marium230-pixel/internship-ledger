@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Internship Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --mahogany: #3B1F1B;
+    --mahogany-light: #4E2C26;
+    --card: #FBF3EF;
+    --card-line: #E7D3CB;
+    --copper: #8C4E4F;
+    --rose: #B66E79;
+    --blush: #FADADD;
+    --ink: #2A1613;
+    --muted: #8A6B63;
+    --danger: #A23B3B;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: var(--mahogany);
+    background-image: radial-gradient(circle at 15% 0%, var(--mahogany-light), var(--mahogany) 55%);
+    color: var(--card);
+    font-family: 'Jost', sans-serif;
+    min-height:100vh;
+    padding: 28px 16px 60px;
+  }
+  .wrap{ max-width:560px; margin:0 auto; }
+
+  header{ text-align:center; margin-bottom:22px; }
+  .eyebrow{
+    font-size:11px; letter-spacing:.28em; text-transform:uppercase;
+    color: var(--rose); margin-bottom:10px; font-weight:600;
+  }
+  h1{
+    font-family:'Playfair Display', serif;
+    font-weight:700; font-size:34px; margin:0;
+    color: var(--blush);
+  }
+  h1 em{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic; font-weight:500; color: var(--rose);
+  }
+  .date-rule{
+    display:flex; align-items:center; gap:10px; justify-content:center;
+    margin-top:10px; color:#D9B4B0; font-size:13px;
+  }
+  .date-rule span.line{ height:1px; width:34px; background:#6B4038; }
+
+  .summary{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+    margin:22px 0;
+  }
+  .summary .cell{
+    background: var(--mahogany-light);
+    border:1px solid #5C332C;
+    border-radius:14px; padding:14px 8px; text-align:center;
+  }
+  .summary .num{ font-family:'Playfair Display',serif; font-size:26px; color:var(--blush); font-weight:700; }
+  .summary .lbl{ font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#C99A93; margin-top:2px;}
+
+  .tabs, .chips{
+    display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:10px;
+    -ms-overflow-style:none; scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar, .chips::-webkit-scrollbar{ display:none; }
+  .tab, .chip{
+    flex:0 0 auto;
+    min-height:44px; display:flex; align-items:center;
+    padding:0 16px; border-radius:999px; border:1px solid #6B4038;
+    background:transparent; color:#E9C9C3; font-family:'Jost',sans-serif;
+    font-size:13.5px; font-weight:500; cursor:pointer; white-space:nowrap;
+  }
+  .tab.active, .chip.active{
+    background: var(--rose); border-color:var(--rose); color:#2A1613; font-weight:600;
+  }
+  .chips{ margin-bottom:20px; }
+
+  .section-title{
+    font-family:'Cormorant Garamond', serif; font-style:italic;
+    font-size:20px; color:var(--blush); margin:22px 0 10px 2px;
+  }
+
+  .card{
+    background: var(--card); color: var(--ink);
+    border-radius:16px; padding:14px 14px 14px 12px;
+    display:flex; gap:12px; align-items:flex-start;
+    margin-bottom:10px; border:1px solid var(--card-line);
+  }
+  .card.overdue{ border-color: var(--danger); box-shadow: inset 3px 0 0 var(--danger); }
+  .check{
+    width:26px; height:26px; min-width:26px; border-radius:50%;
+    border:2px solid var(--copper); background:#fff; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    margin-top:2px;
+  }
+  .check.done{ background: var(--copper); }
+  .check.done::after{ content:"✓"; color:#fff; font-size:14px; }
+  .tapzone{ min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; margin:-9px; }
+
+  .card-body{ flex:1; min-width:0; }
+  .card-top{ display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .mono{
+    width:26px; height:26px; border-radius:50%; background:var(--copper); color:#fff;
+    font-size:10.5px; font-weight:600; display:flex; align-items:center; justify-content:center;
+    letter-spacing:.02em; flex:0 0 auto;
+  }
+  .task-title{ font-weight:500; font-size:15px; line-height:1.35; }
+  .task-title.done{ text-decoration:line-through; color:var(--muted); }
+  .meta-row{ display:flex; gap:6px; margin-top:7px; flex-wrap:wrap; }
+  .pill{
+    font-size:11px; padding:3px 9px; border-radius:999px; font-weight:500;
+    background:#F0DDD6; color:var(--copper); border:1px solid var(--card-line);
+  }
+  .pill.due{ background:#F6E4C8; color:#7A5A1E; }
+  .pill.overdue{ background:#F6D6D6; color:var(--danger); }
+  .pill.crit{ background:var(--rose); color:#2A1613; }
+
+  .del{
+    min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center;
+    color:var(--muted); cursor:pointer; font-size:16px; margin:-9px;
+  }
+
+  .empty{
+    text-align:center; padding:40px 16px; color:#D9B4B0; font-size:14px;
+    border:1px dashed #6B4038; border-radius:16px;
+  }
+
+  .fab{
+    position:fixed; bottom:22px; right:50%; transform:translateX(280px);
+    width:58px; height:58px; border-radius:50%; background:var(--rose);
+    color:#2A1613; font-size:26px; border:none; box-shadow:0 8px 20px rgba(0,0,0,.4);
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  @media (max-width:600px){ .fab{ right:22px; transform:none; } }
+
+  .sheet-backdrop{
+    position:fixed; inset:0; background:rgba(20,8,6,.55); display:none;
+    align-items:flex-end; justify-content:center; z-index:20;
+  }
+  .sheet-backdrop.open{ display:flex; }
+  .sheet{
+    background: var(--card); color:var(--ink); width:100%; max-width:560px;
+    border-radius:22px 22px 0 0; padding:22px 20px 26px; max-height:88vh; overflow-y:auto;
+  }
+  .sheet h2{ font-family:'Playfair Display',serif; margin:0 0 16px; font-size:21px; }
+  label{ font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); display:block; margin:14px 0 6px; font-weight:600; }
+  input[type=text], input[type=date], select, textarea{
+    width:100%; min-height:46px; border-radius:10px; border:1px solid var(--card-line);
+    padding:10px 12px; font-family:'Jost',sans-serif; font-size:15px; background:#fff; color:var(--ink);
+  }
+  .int-pick{ display:flex; gap:8px; flex-wrap:wrap; }
+  .int-pick button{
+    min-height:44px; padding:0 14px; border-radius:10px; border:1.5px solid var(--card-line);
+    background:#fff; font-family:'Jost',sans-serif; font-size:13.5px; cursor:pointer; color:var(--ink);
+  }
+  .int-pick button.active{ background:var(--copper); border-color:var(--copper); color:#fff; font-weight:600; }
+  .sheet-actions{ display:flex; gap:10px; margin-top:22px; }
+  .btn{
+    flex:1; min-height:48px; border-radius:12px; border:none; font-family:'Jost',sans-serif;
+    font-size:15px; font-weight:600; cursor:pointer;
+  }
+  .btn-primary{ background:var(--copper); color:#fff; }
+  .btn-ghost{ background:transparent; border:1.5px solid var(--card-line); color:var(--muted); }
+
+  footer{ text-align:center; margin-top:34px; }
+  footer button{
+    background:none; border:none; color:#C99A93; font-size:12px; text-decoration:underline;
+    cursor:pointer; min-height:44px;
+  }
+
+  .manage-link{
+    background:none; border:none; color:#C99A93; font-size:11.5px; text-decoration:underline;
+    cursor:pointer; min-height:44px; margin-top:6px; letter-spacing:.02em;
+  }
+  .int-row{
+    display:flex; align-items:center; gap:10px; padding:10px 0;
+    border-bottom:1px solid var(--card-line);
+  }
+  .int-row .mono{ flex:0 0 auto; }
+  .int-row .int-info{ flex:1; min-width:0; }
+  .int-row .int-info .nm{ font-weight:600; font-size:14px; }
+  .int-row .int-info .fd{ font-size:12px; color:var(--muted); }
+  .int-row .remove-int{
+    min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center;
+    color:var(--danger); cursor:pointer; font-size:15px; background:none; border:none;
+  }
+  .add-int-form{
+    margin-top:16px; padding-top:14px; border-top:1px dashed var(--card-line);
+  }
+  .row2{ display:flex; gap:10px; }
+  .row2 > div{ flex:1; }
+  .hint{ font-size:11.5px; color:var(--muted); margin-top:4px; }
+
+  .digest-row{
+    padding:12px 0; border-bottom:1px solid var(--card-line);
+  }
+  .digest-row .nm{ font-weight:600; font-size:14px; margin-bottom:6px; }
+  .digest-stats{ display:flex; gap:14px; }
+  .digest-stats span{ font-size:12.5px; color:var(--muted); }
+  .digest-stats b{ color:var(--copper); }
+  .restore-btn{
+    min-height:36px; padding:0 12px; border-radius:8px; border:1.5px solid var(--card-line);
+    background:#fff; color:var(--copper); font-family:'Jost',sans-serif; font-size:12.5px;
+    font-weight:600; cursor:pointer;
+  }
+
+  .search-wrap{ position:relative; margin-bottom:14px; }
+  .search-wrap input{
+    width:100%; min-height:44px; border-radius:12px; border:1px solid #6B4038;
+    background: var(--mahogany-light); color:var(--card); padding:0 40px 0 14px;
+    font-family:'Jost',sans-serif; font-size:14px;
+  }
+  .search-wrap input::placeholder{ color:#B98C82; }
+  .search-wrap .clear-search{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    width:32px; height:32px; border-radius:50%; border:none; background:transparent;
+    color:#D9B4B0; cursor:pointer; font-size:14px; display:none;
+  }
+  .search-wrap.has-query .clear-search{ display:block; }
+
+  .snooze-row{ display:flex; gap:6px; margin-top:8px; }
+  .snooze-btn{
+    min-height:30px; padding:0 10px; border-radius:8px; border:1px solid var(--card-line);
+    background:#fff; color:var(--copper); font-family:'Jost',sans-serif; font-size:11.5px;
+    font-weight:600; cursor:pointer;
+  }
+
+  .header-row-btns{ display:flex; gap:14px; justify-content:center; margin-top:6px; }
+
+  body.minimal .summary, body.minimal .chips, body.minimal .eyebrow,
+  body.minimal .manage-link, body.minimal footer, body.minimal #today-view-btn{ display:none !important; }
+  body.minimal .tabs{ display:none !important; }
+  #back-to-full{ display:none; }
+  body.minimal #back-to-full{ display:inline-block; }
+  body.minimal h1{ font-size:28px; }
+
+  .mic-row{ display:flex; gap:8px; }
+  .mic-row input{ flex:1; }
+  .mic-btn{
+    min-width:46px; min-height:46px; border-radius:10px; border:1px solid var(--card-line);
+    background:#fff; color:var(--copper); font-size:17px; cursor:pointer;
+  }
+  .mic-btn.listening{ background:var(--copper); color:#fff; }
+  .mic-btn:disabled{ opacity:.35; cursor:not-allowed; }
+
+  .int-row .status-badge{
+    font-size:10px; text-transform:uppercase; letter-spacing:.06em; font-weight:700;
+    color:var(--muted); background:#F0DDD6; padding:2px 7px; border-radius:6px; margin-left:6px;
+  }
+  .int-row-actions{ display:flex; gap:6px; flex:0 0 auto; }
+  .int-row-actions button{
+    min-height:36px; padding:0 10px; border-radius:8px; border:1.5px solid var(--card-line);
+    background:#fff; font-family:'Jost',sans-serif; font-size:11.5px; font-weight:600; cursor:pointer;
+  }
+  .int-row-actions .wind-btn{ color:#7A5A1E; }
+  .int-row-actions .reactivate-btn{ color:var(--copper); }
+  .int-row-actions .remove-int{ color:var(--danger); min-width:36px; }
+  .sub-heading{
+    font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted);
+    font-weight:700; margin:18px 0 4px;
+  }
+
+  .toast{
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; padding:10px 18px; border-radius:999px;
+    font-family:'Jost',sans-serif; font-size:13px; font-weight:600; z-index:40;
+    box-shadow:0 6px 18px rgba(0,0,0,.35); opacity:0; pointer-events:none;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Vol. I · Daily Brief</div>
+    <h1>The Internship <em>Ledger</em></h1>
+    <div class="date-rule"><span class="line"></span><span id="today-date"></span><span class="line"></span></div>
+    <div class="header-row-btns">
+      <button id="manage-btn" class="manage-link">Manage internships</button>
+      <button id="today-view-btn" class="manage-link">Today view</button>
+      <button id="back-to-full" class="manage-link">← Full view</button>
+    </div>
+  </header>
+
+  <div class="summary">
+    <div class="cell"><div class="num" id="stat-overdue">0</div><div class="lbl">Overdue</div></div>
+    <div class="cell"><div class="num" id="stat-today">0</div><div class="lbl">Due Today</div></div>
+    <div class="cell"><div class="num" id="stat-week">0</div><div class="lbl">This Week</div></div>
+  </div>
+
+  <div class="search-wrap" id="search-wrap">
+    <input type="text" id="search-input" placeholder="Search all tasks…">
+    <button class="clear-search" id="clear-search">✕</button>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="chips" id="chips"></div>
+
+  <div id="list-area"></div>
+
+  <footer>
+    <button id="digest-btn">Weekly digest</button> &nbsp;·&nbsp;
+    <button id="export-btn">Export backup</button> &nbsp;·&nbsp;
+    <button id="import-btn">Import backup</button>
+    <input type="file" id="import-file" accept="application/json" style="display:none">
+  </footer>
+</div>
+
+<button class="fab" id="fab">+</button>
+<div class="toast" id="toast"></div>
+
+<div class="sheet-backdrop" id="digest-backdrop">
+  <div class="sheet">
+    <h2>Weekly digest</h2>
+    <div id="digest-body"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="digest-close-btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="sheet-backdrop">
+  <div class="sheet">
+    <h2>Log a task</h2>
+    <label>Internship</label>
+    <div class="int-pick" id="int-pick"></div>
+
+    <label>Task</label>
+    <div class="mic-row">
+      <input type="text" id="f-title" placeholder="e.g. Submit Week 5 quiz">
+      <button type="button" class="mic-btn" id="mic-btn" title="Speak your task">🎤</button>
+    </div>
+
+    <label id="f-custom-label">Detail</label>
+    <input type="text" id="f-custom" placeholder="">
+
+    <label>Due date (optional)</label>
+    <input type="date" id="f-date">
+
+    <label>Notes (optional)</label>
+    <textarea id="f-notes" rows="2" placeholder="Context, links..."></textarea>
+
+    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+      <input type="checkbox" id="f-repeat" style="width:18px; height:18px; min-height:auto; accent-color:var(--copper);">
+      <span style="text-transform:none; letter-spacing:0; font-size:13px; color:var(--ink); font-weight:500;">Repeats weekly (auto-adds next week's task when I check this one off)</span>
+    </label>
+
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="save-btn">Log it</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="manage-backdrop">
+  <div class="sheet">
+    <h2>Manage internships</h2>
+    <div id="int-list"></div>
+
+    <div class="add-int-form">
+      <label>New internship name</label>
+      <input type="text" id="new-int-name" placeholder="e.g. Zynex Tech Systems">
+
+      <div class="row2">
+        <div>
+          <label>Monogram</label>
+          <input type="text" id="new-int-mono" placeholder="e.g. ZT" maxlength="3">
+        </div>
+        <div>
+          <label>Custom field label</label>
+          <input type="text" id="new-int-field" placeholder="e.g. Milestone">
+        </div>
+      </div>
+      <div class="hint">The custom field is whatever unit that internship's work is measured in — Week #, Severity, Deliverable, etc.</div>
+
+      <div class="sheet-actions">
+        <button class="btn btn-primary" id="add-int-btn">Add internship</button>
+      </div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="manage-close-btn">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_INTS = {
+  flyrank:   { name:"FlyRank AI Fluency", mono:"FR", field:"Week #", opts:["Week 1","Week 2","Week 3","Week 4","Week 5","Week 6"] },
+  excelerate:{ name:"Excelerate Flutter Dev", mono:"EX", field:"Lesson", opts:null },
+  swiftly:   { name:"Swiftly Seva UI/UX", mono:"SS", field:"Deliverable", opts:["Wireframes","Hi-Fi Mockup","Prototype","Design QA","Handoff"] },
+  heyjivu:   { name:"HeyJivu QA", mono:"HJ", field:"Severity", opts:["Low","Medium","High","Critical"] },
+};
+
+let INTS = JSON.parse(localStorage.getItem('ledger_internships') || 'null') || JSON.parse(JSON.stringify(DEFAULT_INTS));
+let tasks = JSON.parse(localStorage.getItem('ledger_tasks') || '[]');
+let activeTab = 'today';
+let activeInt = 'all';
+let editingId = null;
+let searchQuery = '';
+let minimalMode = false;
+
+function save(){ localStorage.setItem('ledger_tasks', JSON.stringify(tasks)); render(); }
+function saveInts(){ localStorage.setItem('ledger_internships', JSON.stringify(INTS)); buildChips(); render(); }
+function uid(){ return 't' + Date.now() + Math.random().toString(36).slice(2,7); }
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> toast.classList.remove('show'), 2600);
+}
+function slugify(name){
+  let base = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'internship';
+  let key = base, n = 1;
+  while(INTS[key]) key = base + '-' + (++n);
+  return key;
+}
+
+function fmtDate(d){
+  if(!d) return null;
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US',{ month:'short', day:'numeric' });
+}
+function isOverdue(t){
+  if(!t.due || t.done) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return new Date(t.due+'T00:00:00') < today;
+}
+function isToday(t){
+  if(!t.due) return false;
+  const today = new Date().toISOString().slice(0,10);
+  return t.due === today;
+}
+function isThisWeek(t){
+  if(!t.due) return false;
+  const d = new Date(t.due+'T00:00:00'), today = new Date(); today.setHours(0,0,0,0);
+  const in7 = new Date(today); in7.setDate(in7.getDate()+7);
+  return d >= today && d <= in7;
+}
+
+document.getElementById('today-date').textContent =
+  new Date().toLocaleDateString('en-US',{ weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+// tabs
+const tabDefs = [['today','Today'],['upcoming','Upcoming'],['overdue','Overdue'],['all','All'],['completed','Completed'],['archived','Archived']];
+const tabsEl = document.getElementById('tabs');
+tabDefs.forEach(([id,label])=>{
+  const b = document.createElement('button');
+  b.className='tab'; b.textContent=label; b.dataset.id=id;
+  b.onclick=()=>{ activeTab=id; render(); };
+  tabsEl.appendChild(b);
+});
+
+// chips
+const chipsEl = document.getElementById('chips');
+function buildChips(){
+  chipsEl.innerHTML='';
+  if(activeInt!=='all' && (!INTS[activeInt] || INTS[activeInt].deleted)) activeInt='all';
+  const all = document.createElement('button');
+  all.className='chip'; all.textContent='All internships'; all.dataset.id='all';
+  all.onclick=()=>{ activeInt='all'; render(); };
+  chipsEl.appendChild(all);
+  Object.entries(INTS).filter(([k,v])=>!v.deleted && !v.wound).forEach(([key,v])=>{
+    const c = document.createElement('button');
+    c.className='chip'; c.textContent=v.name.split(' ')[0]; c.dataset.id=key;
+    c.onclick=()=>{ activeInt=key; render(); };
+    chipsEl.appendChild(c);
+  });
+}
+buildChips();
+
+function render(){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.id===activeTab));
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.id===activeInt));
+
+  document.getElementById('stat-overdue').textContent = tasks.filter(isOverdue).length;
+  document.getElementById('stat-today').textContent = tasks.filter(isToday).length;
+  document.getElementById('stat-week').textContent = tasks.filter(isThisWeek).length;
+
+  let list = tasks.filter(t => INTS[t.internship] && (activeInt==='all' || t.internship===activeInt));
+  if(searchQuery){
+    const q = searchQuery;
+    list = list.filter(t=>!t.archived && (
+      t.title.toLowerCase().includes(q) ||
+      (t.notes||'').toLowerCase().includes(q) ||
+      (t.custom||'').toLowerCase().includes(q)
+    ));
+  } else if(activeTab==='archived'){
+    list = list.filter(t=>t.archived);
+  } else {
+    list = list.filter(t=>!t.archived);
+    if(activeTab==='today') list = list.filter(t=>!t.done && (isToday(t) || isOverdue(t)));
+    else if(activeTab==='upcoming') list = list.filter(t=>!t.done && t.due && !isToday(t) && !isOverdue(t));
+    else if(activeTab==='overdue') list = list.filter(isOverdue);
+    else if(activeTab==='completed') list = list.filter(t=>t.done);
+    else list = list.filter(t=>!t.done);
+  }
+
+  list.sort((a,b)=> (a.due||'9999') < (b.due||'9999') ? -1 : 1);
+
+  const area = document.getElementById('list-area');
+  area.innerHTML='';
+  const activeIntCount = Object.values(INTS).filter(v=>!v.deleted).length;
+  if(activeIntCount===0 && activeTab!=='archived'){
+    area.innerHTML = `<div class="empty">No internships yet. Tap \u201cManage internships\u201d above to add your first one.</div>`;
+    return;
+  }
+  if(list.length===0){
+    const emptyMsg = searchQuery ? `No tasks match "${searchQuery}".` :
+      activeTab==='archived' ? "Nothing archived — deleted tasks land here instead of vanishing." :
+      (activeTab==='today' ? "You're clear — enjoy it." : "Add a task with the + button.");
+    area.innerHTML = `<div class="empty">${emptyMsg}</div>`;
+    return;
+  }
+  list.forEach(t=>{
+    const int = INTS[t.internship];
+    const overdue = isOverdue(t);
+    const card = document.createElement('div');
+    card.className = 'card' + (overdue ? ' overdue' : '');
+    const critical = t.custom === 'Critical' || t.custom === 'High';
+    if(t.archived){
+      card.innerHTML = `
+        <div class="card-body">
+          <div class="card-top">
+            <div class="mono">${int.mono}</div>
+            <div class="task-title done">${t.title}</div>
+          </div>
+          <div class="meta-row">
+            ${t.due ? `<span class="pill">${fmtDate(t.due)}</span>` : ''}
+            ${t.custom ? `<span class="pill">${int.field}: ${t.custom}</span>` : ''}
+          </div>
+        </div>
+        <button class="restore-btn">Restore</button>
+      `;
+      card.querySelector('.restore-btn').onclick = ()=>{ t.archived = false; save(); };
+      area.appendChild(card);
+      return;
+    }
+    card.innerHTML = `
+      <div class="tapzone"><div class="check ${t.done?'done':''}"></div></div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="mono">${int.mono}</div>
+          <div class="task-title ${t.done?'done':''}">${t.title}${t.repeat ? ' <span style="opacity:.5;font-size:12px;">&#8635;</span>' : ''}</div>
+        </div>
+        <div class="meta-row">
+          ${t.due ? `<span class="pill ${overdue?'overdue':'due'}">${overdue?'Overdue · ':''}${fmtDate(t.due)}</span>` : ''}
+          ${t.custom ? `<span class="pill ${critical?'crit':''}">${int.field}: ${t.custom}</span>` : ''}
+        </div>
+        ${!t.done ? `<div class="snooze-row">
+          <button class="snooze-btn" data-snooze="1">+1 day</button>
+          <button class="snooze-btn" data-snooze="7">+1 week</button>
+        </div>` : ''}
+      </div>
+      <div class="del">✕</div>
+    `;
+    card.querySelector('.check').onclick = ()=>{
+      const wasDone = t.done;
+      t.done = !t.done;
+      if(t.done && !wasDone && t.repeat && t.due){
+        const next = new Date(t.due + 'T00:00:00');
+        next.setDate(next.getDate() + 7);
+        tasks.push({
+          id: uid(), internship: t.internship, title: t.title, custom: t.custom,
+          due: next.toISOString().slice(0,10), notes: t.notes, done:false, repeat:true, archived:false
+        });
+      }
+      save();
+    };
+    card.querySelector('.del').onclick = ()=>{ if(confirm('Archive this task? You can restore it later from the Archived tab.')){ t.archived = true; save(); } };
+    card.querySelectorAll('.snooze-btn').forEach(btn=>{
+      btn.onclick = ()=>{
+        const days = parseInt(btn.dataset.snooze, 10);
+        const base = t.due ? new Date(t.due + 'T00:00:00') : new Date();
+        base.setDate(base.getDate() + days);
+        t.due = base.toISOString().slice(0,10);
+        const label = days===1 ? 'tomorrow' : `${fmtDate(t.due)}`;
+        showToast(`Moved to ${label}`);
+        save();
+      };
+    });
+    area.appendChild(card);
+  });
+}
+
+// sheet
+const backdrop = document.getElementById('sheet-backdrop');
+const intPick = document.getElementById('int-pick');
+let formInt = null;
+
+function buildIntPick(){
+  intPick.innerHTML='';
+  const active = Object.entries(INTS).filter(([k,v])=>!v.deleted && !v.wound);
+  if(!formInt || !INTS[formInt] || INTS[formInt].deleted) formInt = (active[0] && active[0][0]) || null;
+  active.forEach(([key,v])=>{
+    const b = document.createElement('button');
+    b.textContent = v.name.split(' ')[0]; b.dataset.id = key;
+    b.className = key===formInt ? 'active':'';
+    b.onclick = ()=>{ formInt = key; buildIntPick(); updateCustomField(); };
+    intPick.appendChild(b);
+  });
+}
+function updateCustomField(){
+  if(!formInt){ return; }
+  const int = INTS[formInt];
+  document.getElementById('f-custom-label').textContent = int.field;
+  const input = document.getElementById('f-custom');
+  input.value = '';
+  input.placeholder = int.opts ? int.opts.join(' / ') : `e.g. ${int.field}`;
+}
+
+document.getElementById('fab').onclick = ()=>{
+  const activeKeys = Object.keys(INTS).filter(k=>!INTS[k].deleted && !INTS[k].wound);
+  if(activeKeys.length===0){
+    alert('Add an internship first — tap "Manage internships" above.');
+    return;
+  }
+  editingId = null;
+  formInt = activeKeys[0];
+  document.getElementById('f-title').value='';
+  document.getElementById('f-date').value='';
+  document.getElementById('f-notes').value='';
+  document.getElementById('f-repeat').checked=false;
+  buildIntPick(); updateCustomField();
+  backdrop.classList.add('open');
+};
+document.getElementById('cancel-btn').onclick = ()=> backdrop.classList.remove('open');
+backdrop.onclick = (e)=>{ if(e.target===backdrop) backdrop.classList.remove('open'); };
+
+document.getElementById('save-btn').onclick = ()=>{
+  const title = document.getElementById('f-title').value.trim();
+  if(!formInt){ alert('Add an internship first.'); return; }
+  if(!title){ alert('Give the task a title.'); return; }
+  tasks.push({
+    id: uid(),
+    internship: formInt,
+    title,
+    custom: document.getElementById('f-custom').value.trim(),
+    due: document.getElementById('f-date').value || null,
+    notes: document.getElementById('f-notes').value.trim(),
+    done: false,
+    repeat: document.getElementById('f-repeat').checked,
+    archived: false
+  });
+  save();
+  backdrop.classList.remove('open');
+};
+
+document.getElementById('export-btn').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(tasks,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'internship-ledger-backup.json';
+  a.click();
+};
+document.getElementById('import-btn').onclick = ()=> document.getElementById('import-file').click();
+document.getElementById('import-file').onchange = (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{ tasks = JSON.parse(reader.result); save(); }
+    catch(err){ alert('Could not read that file.'); }
+  };
+  reader.readAsText(file);
+};
+
+// manage internships
+const manageBackdrop = document.getElementById('manage-backdrop');
+const intListEl = document.getElementById('int-list');
+
+function renderIntList(){
+  intListEl.innerHTML='';
+  const allKeys = Object.keys(INTS).filter(k=>!INTS[k].deleted);
+  if(allKeys.length===0){
+    intListEl.innerHTML = `<div class="hint">No internships yet — add your first one below.</div>`;
+    return;
+  }
+  const activeKeys = allKeys.filter(k=>!INTS[k].wound);
+  const woundKeys = allKeys.filter(k=>INTS[k].wound);
+
+  function buildRow(key){
+    const v = INTS[key];
+    const count = tasks.filter(t=>t.internship===key).length;
+    const row = document.createElement('div');
+    row.className='int-row';
+    row.innerHTML = `
+      <div class="mono">${v.mono}</div>
+      <div class="int-info">
+        <div class="nm">${v.name}${v.wound ? '<span class="status-badge">Completed</span>' : ''}</div>
+        <div class="fd">Field: ${v.field}${count ? ` · ${count} task${count>1?'s':''}` : ''}</div>
+      </div>
+      <div class="int-row-actions">
+        ${v.wound
+          ? `<button class="reactivate-btn">Reactivate</button>`
+          : `<button class="wind-btn">Mark complete</button>`}
+        <button class="remove-int" title="Remove">✕</button>
+      </div>
+    `;
+    if(v.wound){
+      row.querySelector('.reactivate-btn').onclick = ()=>{ v.wound = false; saveInts(); renderIntList(); };
+    } else {
+      row.querySelector('.wind-btn').onclick = ()=>{ v.wound = true; saveInts(); renderIntList(); };
+    }
+    row.querySelector('.remove-int').onclick = ()=>{
+      const msg = count
+        ? `Remove "${v.name}"? Its ${count} logged task${count>1?'s':''} will move to Archived, not be deleted.`
+        : `Remove "${v.name}"?`;
+      if(!confirm(msg)) return;
+      INTS[key].deleted = true;
+      tasks.forEach(t=>{ if(t.internship===key) t.archived = true; });
+      localStorage.setItem('ledger_tasks', JSON.stringify(tasks));
+      saveInts();
+      renderIntList();
+    };
+    return row;
+  }
+
+  activeKeys.forEach(key=> intListEl.appendChild(buildRow(key)));
+  if(woundKeys.length){
+    const heading = document.createElement('div');
+    heading.className = 'sub-heading';
+    heading.textContent = 'Completed internships';
+    intListEl.appendChild(heading);
+    woundKeys.forEach(key=> intListEl.appendChild(buildRow(key)));
+  }
+}
+
+document.getElementById('manage-btn').onclick = ()=>{
+  renderIntList();
+  document.getElementById('new-int-name').value='';
+  document.getElementById('new-int-mono').value='';
+  document.getElementById('new-int-field').value='';
+  manageBackdrop.classList.add('open');
+};
+document.getElementById('manage-close-btn').onclick = ()=> manageBackdrop.classList.remove('open');
+manageBackdrop.onclick = (e)=>{ if(e.target===manageBackdrop) manageBackdrop.classList.remove('open'); };
+
+document.getElementById('add-int-btn').onclick = ()=>{
+  const name = document.getElementById('new-int-name').value.trim();
+  let mono = document.getElementById('new-int-mono').value.trim().toUpperCase();
+  let field = document.getElementById('new-int-field').value.trim();
+  if(!name){ alert('Give the internship a name.'); return; }
+  if(!mono){
+    mono = name.split(/\s+/).map(w=>w[0]).join('').slice(0,3).toUpperCase();
+  }
+  if(!field){ field = 'Detail'; }
+  const key = slugify(name);
+  INTS[key] = { name, mono, field, opts:null };
+  saveInts();
+  document.getElementById('new-int-name').value='';
+  document.getElementById('new-int-mono').value='';
+  document.getElementById('new-int-field').value='';
+  renderIntList();
+};
+
+// weekly digest
+const digestBackdrop = document.getElementById('digest-backdrop');
+document.getElementById('digest-btn').onclick = ()=>{
+  const body = document.getElementById('digest-body');
+  const activeInts = Object.entries(INTS).filter(([k,v])=>!v.deleted && !v.wound);
+  if(activeInts.length===0){
+    body.innerHTML = `<div class="hint">Add an internship to see your weekly digest.</div>`;
+  } else {
+    body.innerHTML = activeInts.map(([key,v])=>{
+      const mine = tasks.filter(t=>t.internship===key && !t.archived);
+      const overdueN = mine.filter(isOverdue).length;
+      const weekN = mine.filter(t=>!t.done && isThisWeek(t)).length;
+      const doneN = mine.filter(t=>t.done).length;
+      return `<div class="digest-row">
+        <div class="nm">${v.mono} · ${v.name}</div>
+        <div class="digest-stats">
+          <span><b>${overdueN}</b> overdue</span>
+          <span><b>${weekN}</b> due this week</span>
+          <span><b>${doneN}</b> done</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  digestBackdrop.classList.add('open');
+};
+document.getElementById('digest-close-btn').onclick = ()=> digestBackdrop.classList.remove('open');
+digestBackdrop.onclick = (e)=>{ if(e.target===digestBackdrop) digestBackdrop.classList.remove('open'); };
+
+// search
+const searchInput = document.getElementById('search-input');
+const searchWrap = document.getElementById('search-wrap');
+searchInput.oninput = ()=>{
+  searchQuery = searchInput.value.trim().toLowerCase();
+  searchWrap.classList.toggle('has-query', !!searchQuery);
+  render();
+};
+document.getElementById('clear-search').onclick = ()=>{
+  searchInput.value=''; searchQuery=''; searchWrap.classList.remove('has-query'); render();
+};
+
+// voice-to-task
+const micBtn = document.getElementById('mic-btn');
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const insecureContext = location.protocol === 'file:' || (!window.isSecureContext && location.hostname !== 'localhost');
+if(SpeechRec && !insecureContext){
+  const recognition = new SpeechRec();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  let listening = false;
+  micBtn.onclick = ()=>{
+    if(listening) return;
+    listening = true;
+    micBtn.classList.add('listening');
+    try{ recognition.start(); }
+    catch(err){ listening=false; micBtn.classList.remove('listening'); showToast('Could not start microphone'); }
+  };
+  recognition.onresult = (e)=>{
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('f-title').value = transcript;
+  };
+  recognition.onend = ()=>{ listening = false; micBtn.classList.remove('listening'); };
+  recognition.onerror = (e)=>{
+    listening = false; micBtn.classList.remove('listening');
+    const reasons = {
+      'not-allowed': 'Microphone permission was blocked — allow it in your browser settings and try again.',
+      'service-not-allowed': 'Voice input isn\u2019t allowed on this page. It needs to be opened over https:// (not a local file) to work.',
+      'no-speech': 'Didn\u2019t catch that — try again.',
+      'network': 'Voice input needs an internet connection.'
+    };
+    showToast(reasons[e.error] || 'Voice input failed — try typing instead.');
+  };
+} else if(insecureContext){
+  micBtn.disabled = false;
+  micBtn.onclick = ()=> showToast('Voice input needs this page hosted at an https:// link — it won\u2019t work from a local file. Try again after deploying.');
+} else {
+  micBtn.disabled = true;
+  micBtn.title = 'Voice input not supported in this browser';
+}
+
+// today view (minimal mode)
+const todayViewBtn = document.getElementById('today-view-btn');
+const backToFullBtn = document.getElementById('back-to-full');
+todayViewBtn.onclick = ()=>{
+  minimalMode = true;
+  activeTab = 'today'; activeInt = 'all';
+  searchQuery=''; searchInput.value=''; searchWrap.classList.remove('has-query');
+  document.body.classList.add('minimal');
+  render();
+};
+backToFullBtn.onclick = ()=>{
+  minimalMode = false;
+  document.body.classList.remove('minimal');
+  render();
+};
+
+render();
+</script>
+</body>
+</html>
